@@ -1,0 +1,62 @@
+% clear;
+% clc;
+% load('DeepMIMO\DeepMIMO_dataset\dataset4\DeepMIMO_dataset.mat');
+
+num_user = numel(DeepMIMO_dataset{1, 1}.user);
+all_LoS = zeros(num_user,1);
+
+for u=1:num_user
+    user_LoS = DeepMIMO_dataset{1, 1}.user{1, u}.LoS_status;
+    all_LoS(u) = user_LoS;
+end
+user_with_path = find(all_LoS~=-1);
+num_user_wiht_path = numel(user_with_path);
+all_LoS = all_LoS(user_with_path);
+
+%% extract channels and positions
+channel_shape = size(DeepMIMO_dataset{1, 1}.user{1,1}.channel);
+all_channel = zeros([num_user_wiht_path, channel_shape]);
+all_pos = zeros([num_user_wiht_path, 3]);
+
+for u_=1:num_user_wiht_path
+    u = user_with_path(u_);
+    user_channel = DeepMIMO_dataset{1, 1}.user{1, u}.channel; % (rx, tx, subcarrier)
+    user_pos = DeepMIMO_dataset{1, 1}.user{1, u}.loc;
+    all_channel(u_, :, :, :, :) = single(user_channel);
+    all_pos(u_, :) = user_pos;
+end
+
+all_channel = single(all_channel);
+all_pos = single(all_pos);
+all_LoS = single(all_LoS);
+
+all_channel_d = ifft(all_channel, size(all_channel,4), 4);
+all_channel_d_clip = all_channel_d(:,:,:,1:32);
+all_channel_ad_clip = fftshift(fft(all_channel_d_clip, size(all_channel,3), 3),3);
+all_channel_d_clip_ = ifftshift(ifft(all_channel_ad_clip, size(all_channel,3), 3),3);
+% all_channel_recover = fft(ifftshift(ifft(all_channel_ad_clip, size(all_channel,3), 3),3), size(all_channel_d, 4), 4);
+
+all_channel_recover = fft(all_channel_d_clip_, size(all_channel_d, 4), 4);
+
+%%
+[m, n, p, q] = size(all_channel_recover);
+
+% Initialize an array to hold the Frobenius norms for each matrix
+frobenius_norms = zeros(m, n);
+
+% Compute the Frobenius norm for each matrix
+for i = 1:m
+    for j = 1:n
+        frobenius_norms(i, j) = norm(all_channel_recover(i, j, :, :)-all_channel(i, j, :, :), 'fro')^2 / norm(all_channel(i, j, :, :), 'fro')^2 ;
+    end
+end
+%%
+
+
+% all_channel_d_clip = all_channel_d(:,:,:,1:32);
+
+
+
+
+
+

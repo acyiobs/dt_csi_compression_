@@ -1,0 +1,1 @@
+Data used here is the right half of boston x>200, y<100
